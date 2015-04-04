@@ -18,7 +18,7 @@
 #include <glib.h>
 #include <cairo.h>
 
-static void _auto_free(void **p){
+__attribute__((unused)) static void _auto_free(void **p) {
     free(*p);
 }
 
