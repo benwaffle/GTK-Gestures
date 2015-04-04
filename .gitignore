@@ -2,4 +2,6 @@ a.out
 *.so
 *.o
 gtk_gestures
+ui.c
 .gdb_history
+peda-*

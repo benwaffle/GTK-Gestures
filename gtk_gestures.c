@@ -1,29 +1,22 @@
-enum drawing { drag, rotate } state;
-
-union {
-    struct { double start_x, start_y, end_x, end_y; }; // drag
-    struct { double angle, angle_delta; }; // rotate
-} data;
+static GtkGesture *drag, *rotate, *zoom;
 
 typedef struct { double x, y; } Touch;
-GHashTable *touches = NULL;
+static GHashTable *touches = NULL;
 
 static void on_touch(GtkWidget      *w,
                      GdkEventTouch  *ev,
                      GtkDrawingArea *draw_area)
 {
-    printf("event = %d\n", ev->type);
     switch (ev->type)
     {
         case GDK_TOUCH_BEGIN:
         {
             if (!g_hash_table_contains(touches, ev->sequence))
             {
-                Touch *t = malloc(sizeof(Touch));
+                Touch *t = g_new(Touch, 1);
                 t->x = ev->x;
                 t->y = ev->y;
                 g_hash_table_insert(touches, ev->sequence, t);
-                printf("\tbegin %p: %g,%g\n", ev->sequence, t->x, t->y);
             }
             break;
         }
@@ -33,7 +26,6 @@ static void on_touch(GtkWidget      *w,
             Touch *t = g_hash_table_lookup(touches, ev->sequence);
             t->x = ev->x;
             t->y = ev->y;
-            printf("\tupdate %p: %g,%g\n", ev->sequence, t->x, t->y);
             break;
         }
 
@@ -52,57 +44,66 @@ static void on_touch(GtkWidget      *w,
     gtk_widget_queue_draw(GTK_WIDGET(draw_area));
 }
 
-static void on_drag(GtkGestureDrag *gesture,
-                    double         offset_x,
-                    double         offset_y,
-                    GtkDrawingArea *draw_area)
-{
-    gtk_gesture_drag_get_start_point(gesture, &data.start_x, &data.start_y);
-    data.end_x = data.start_x + offset_x;
-    data.end_y = data.start_y + offset_y;
-    state = drag;
-    gtk_widget_queue_draw(GTK_WIDGET(draw_area));
-}
-
-static void on_rotate(GtkGesture     *gesture,
-                      double          angle,
-                      double          angle_delta,
-                      GtkDrawingArea *draw_area)
-{
-    data.angle = angle;
-    data.angle_delta = angle_delta;
-    state = rotate;
-    gtk_widget_queue_draw(GTK_WIDGET(draw_area));
-}
-
 static void handle_gestures(GtkWidget *widget,
                             GtkWidget *draw_area)
 {
     touches = g_hash_table_new_full(NULL, NULL, NULL, &free);
     g_signal_connect(widget, "touch-event", G_CALLBACK(on_touch), draw_area);
 
-    GtkGesture *drag = gtk_gesture_drag_new(widget);
-    g_signal_connect(drag, "drag-update", G_CALLBACK(on_drag), draw_area);
-    
-    GtkGesture *rotate = gtk_gesture_rotate_new(widget);
-    g_signal_connect(rotate, "angle-changed", G_CALLBACK(on_rotate), draw_area);
+    drag = gtk_gesture_drag_new(widget);
+    rotate = gtk_gesture_rotate_new(widget);
+    zoom = gtk_gesture_zoom_new(widget);
+
+    g_signal_connect_swapped(drag, "drag-update", G_CALLBACK(gtk_widget_queue_draw), draw_area);
+    g_signal_connect_swapped(rotate, "angle-changed", G_CALLBACK(gtk_widget_queue_draw), draw_area);
+    g_signal_connect_swapped(zoom, "scale-changed", G_CALLBACK(gtk_widget_queue_draw), draw_area);
 }
 
-static bool draw(GtkWidget *widget,
+static gboolean draw(GtkWidget *widget,
                      cairo_t   *cr,
                      gpointer   user_data)
 {
-    cairo_set_source_rgb(cr, 0, 0, 0);
- 
-    if (state == drag) {
-        cairo_move_to(cr, data.start_x, data.start_y);
-        cairo_line_to(cr, data.end_x, data.end_y);
-        cairo_set_line_width(cr, 4.0);
+    if (gtk_gesture_is_recognized(drag))
+    {
+        gdouble x, y;
+        gtk_gesture_drag_get_start_point(GTK_GESTURE_DRAG(drag), &x, &y);
+        cairo_move_to(cr, x, y);
+
+        gdouble dx, dy;
+        gtk_gesture_drag_get_offset(GTK_GESTURE_DRAG(drag), &dx, &dy);
+        cairo_line_to(cr, x + dx, y + dy);
+
+        cairo_set_source_rgb(cr, 1, 0.5, 0);
+        cairo_set_line_width(cr, 4);
         cairo_stroke(cr);
-    } else if (state == rotate) {
-        cairo_arc(cr, 500, 500, 200, 0, data.angle_delta);
-        cairo_fill(cr);
     }
+
+    gdouble scale = 1;
+    if (gtk_gesture_is_recognized(zoom))
+        scale = gtk_gesture_zoom_get_scale_delta(GTK_GESTURE_ZOOM(zoom));
+    if (gtk_gesture_is_recognized(rotate))
+    {
+        cairo_matrix_t matrix;
+        gdouble x, y;
+        gtk_gesture_get_bounding_box_center(rotate, &x, &y);
+        cairo_matrix_init_translate(&matrix, x, y);
+        cairo_matrix_rotate(&matrix, gtk_gesture_rotate_get_angle_delta(GTK_GESTURE_ROTATE(rotate))*2);
+        cairo_matrix_scale(&matrix, scale, scale);
+
+        cairo_save(cr); // save matrix
+        {
+            cairo_set_matrix(cr, &matrix);
+            cairo_set_source_rgb(cr, 1, 0, 0.5);
+            cairo_rectangle(cr, -100, -100, 200, 200);
+            cairo_fill(cr);
+        }
+        cairo_restore(cr);
+    }
+
+    double min_x = gtk_widget_get_allocated_width(widget);
+    double max_x = 0;
+    double min_y = gtk_widget_get_allocated_height(widget);
+    double max_y = 0;
 
     GList *touch_list = g_hash_table_get_values(touches);
     for (GList *touch_elem = touch_list; touch_elem  != NULL; touch_elem = touch_elem->next)
@@ -110,8 +111,19 @@ static bool draw(GtkWidget *widget,
         Touch *t = touch_elem->data;
         cairo_arc(cr, t->x, t->y, 25, 0, 2*M_PI);
         cairo_fill(cr);
+
+        min_x = MIN(min_x, t->x);
+        min_y = MIN(min_y, t->y);
+        max_x = MAX(max_x, t->x);
+        max_y = MAX(max_y, t->y);
     }
     g_list_free(touch_list);
+
+    cairo_set_source_rgb(cr, 0, 1, 0);
+    cairo_set_line_width(cr, 2);
+    cairo_rectangle(cr, min_x, min_y, max_x-min_x, max_y-min_y);
+    cairo_stroke(cr);
+
     return GDK_EVENT_PROPAGATE;
 }
 
@@ -121,6 +133,7 @@ int main(int argc, char *argv[])
 
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "GTK gestures demo");
+    gtk_window_maximize(GTK_WINDOW(window));
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     GtkWidget *drawing_area = gtk_drawing_area_new();
