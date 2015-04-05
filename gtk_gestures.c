@@ -49,19 +49,6 @@ void on_touch(GtkWidget      *w,
     gtk_widget_queue_draw(w); // drawing area
 }
 
-static void handle_gestures(GtkWidget *drawingarea)
-{
-    touches = g_hash_table_new_full(NULL, NULL, NULL, &free);
-
-    drag = gtk_gesture_drag_new(drawingarea);
-    rotate = gtk_gesture_rotate_new(drawingarea);
-    zoom = gtk_gesture_zoom_new(drawingarea);
-
-    g_signal_connect_swapped(drag,   "drag-update",   G_CALLBACK(gtk_widget_queue_draw), drawingarea);
-    g_signal_connect_swapped(rotate, "angle-changed", G_CALLBACK(gtk_widget_queue_draw), drawingarea);
-    g_signal_connect_swapped(zoom,   "scale-changed", G_CALLBACK(gtk_widget_queue_draw), drawingarea);
-}
-
 gboolean draw(GtkWidget *widget,
               cairo_t   *cr,
               gpointer   user_data)
@@ -176,7 +163,15 @@ int main(int argc, char *argv[])
                drag_switch         = get("drag");
 #undef get
 
-    handle_gestures(drawing_area);
+    touches = g_hash_table_new_full(NULL, NULL, NULL, &free);
+
+    drag = gtk_gesture_drag_new(drawing_area);
+    rotate = gtk_gesture_rotate_new(drawing_area);
+    zoom = gtk_gesture_zoom_new(drawing_area);
+
+    g_signal_connect_swapped(drag,   "drag-update",   G_CALLBACK(gtk_widget_queue_draw), drawing_area);
+    g_signal_connect_swapped(rotate, "angle-changed", G_CALLBACK(gtk_widget_queue_draw), drawing_area);
+    g_signal_connect_swapped(zoom,   "scale-changed", G_CALLBACK(gtk_widget_queue_draw), drawing_area);
 
     gtk_window_maximize(GTK_WINDOW(window));
     gtk_widget_show_all(window);
