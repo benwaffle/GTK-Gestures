@@ -145,10 +145,14 @@ gboolean draw(GtkWidget *widget,
 
         if (draw_bounding_box)
         {
-            cairo_set_source_rgb(cr, 0, 1, 0);
-            cairo_set_line_width(cr, 2);
+            cairo_pattern_t *gradient = cairo_pattern_create_linear(min_x-circle_radius, 0, max_x+circle_radius*2, 0);
+            cairo_pattern_add_color_stop_rgb(gradient, 0, 0.5, 1, 0); 
+            cairo_pattern_add_color_stop_rgb(gradient, 1, 0, 1, 1); 
+            cairo_set_source(cr, gradient);
             cairo_rectangle(cr, min_x-circle_radius, min_y-circle_radius, max_x-min_x+circle_radius*2, max_y-min_y+circle_radius*2);
+            cairo_set_line_width(cr, 10);
             cairo_stroke(cr);
+            cairo_pattern_destroy(gradient);
         }
     }
 
