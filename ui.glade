@@ -39,9 +39,10 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSwitch" id="switch1">
+                  <object class="GtkSwitch" id="show_touches">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
+                    <property name="active">True</property>
                     <property name="state">True</property>
                   </object>
                   <packing>
@@ -77,10 +78,9 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSwitch" id="switch2">
+                  <object class="GtkSwitch" id="bounding_box">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="active">True</property>
                     <property name="state">True</property>
                   </object>
                   <packing>
@@ -116,10 +116,9 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSwitch" id="switch3">
+                  <object class="GtkSwitch" id="rotate">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="active">True</property>
                     <property name="state">True</property>
                   </object>
                   <packing>
@@ -155,10 +154,9 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSwitch" id="switch4">
+                  <object class="GtkSwitch" id="zoom">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="active">True</property>
                     <property name="state">True</property>
                   </object>
                   <packing>
@@ -194,7 +192,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSwitch" id="switch5">
+                  <object class="GtkSwitch" id="drag">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="active">True</property>

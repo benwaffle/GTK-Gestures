@@ -1,7 +1,10 @@
 static GtkGesture *drag, *rotate, *zoom;
-
-typedef struct { double x, y; } Touch;
-static GHashTable *touches = NULL;
+typedef struct { double x, y; } Touch; static GHashTable *touches = NULL;
+static GtkWidget *show_touches_switch,
+                 *bounding_box_switch,
+                 *rotate_switch,
+                 *zoom_switch,
+                 *drag_switch;
 
 static void on_touch(GtkWidget      *w,
                      GdkEventTouch  *ev,
@@ -62,7 +65,7 @@ static gboolean draw(GtkWidget *widget,
                      cairo_t   *cr,
                      gpointer   user_data)
 {
-    if (gtk_gesture_is_recognized(drag))
+    if (gtk_switch_get_state(GTK_SWITCH(drag_switch)) && gtk_gesture_is_recognized(drag))
     {
         gdouble x, y;
         gtk_gesture_drag_get_start_point(GTK_GESTURE_DRAG(drag), &x, &y);
@@ -77,18 +80,26 @@ static gboolean draw(GtkWidget *widget,
         cairo_stroke(cr);
     }
 
-    gdouble scale = 1;
-    if (gtk_gesture_is_recognized(zoom))
+    double scale = 1;
+    if (gtk_switch_get_state(GTK_SWITCH(zoom_switch)) && gtk_gesture_is_recognized(zoom))
     {
         scale = gtk_gesture_zoom_get_scale_delta(GTK_GESTURE_ZOOM(zoom));
     }
-    if (gtk_gesture_is_recognized(rotate))
+
+    double rotation = 0;
+    if (gtk_switch_get_state(GTK_SWITCH(rotate_switch)) && gtk_gesture_is_recognized(rotate))
+    {
+        rotation = gtk_gesture_rotate_get_angle_delta(GTK_GESTURE_ROTATE(rotate))*2;
+    }
+
+    if ((gtk_switch_get_state(GTK_SWITCH(zoom_switch)) && gtk_gesture_is_recognized(zoom)) ||
+        (gtk_switch_get_state(GTK_SWITCH(rotate_switch)) && gtk_gesture_is_recognized(rotate)))
     {
         cairo_matrix_t matrix;
         gdouble x, y;
         gtk_gesture_get_bounding_box_center(rotate, &x, &y);
         cairo_matrix_init_translate(&matrix, x, y);
-        cairo_matrix_rotate(&matrix, gtk_gesture_rotate_get_angle_delta(GTK_GESTURE_ROTATE(rotate))*2);
+        cairo_matrix_rotate(&matrix, rotation);
         cairo_matrix_scale(&matrix, scale, scale);
 
         cairo_save(cr); // save matrix
@@ -101,29 +112,35 @@ static gboolean draw(GtkWidget *widget,
         cairo_restore(cr);
     }
 
-    double min_x = gtk_widget_get_allocated_width(widget);
-    double max_x = 0;
-    double min_y = gtk_widget_get_allocated_height(widget);
-    double max_y = 0;
+    double min_x = gtk_widget_get_allocated_width(widget) + 1;
+    double max_x = -1;
+    double min_y = gtk_widget_get_allocated_height(widget) + 1;
+    double max_y = -1;
 
     GList *touch_list = g_hash_table_get_values(touches);
     for (GList *touch_elem = touch_list; touch_elem  != NULL; touch_elem = touch_elem->next)
     {
         Touch *t = touch_elem->data;
-        cairo_arc(cr, t->x, t->y, 25, 0, 2*M_PI);
-        cairo_fill(cr);
+        if (gtk_switch_get_state(GTK_SWITCH(show_touches_switch)))
+        {
+            cairo_arc(cr, t->x, t->y, 25, 0, 2*M_PI);
+            cairo_fill(cr);
+        }
 
         min_x = MIN(min_x, t->x);
-        min_y = MIN(min_y, t->y);
         max_x = MAX(max_x, t->x);
+        min_y = MIN(min_y, t->y);
         max_y = MAX(max_y, t->y);
     }
     g_list_free(touch_list);
 
-    cairo_set_source_rgb(cr, 0, 1, 0);
-    cairo_set_line_width(cr, 2);
-    cairo_rectangle(cr, min_x, min_y, max_x-min_x, max_y-min_y);
-    cairo_stroke(cr);
+    if (gtk_switch_get_state(GTK_SWITCH(bounding_box_switch)))
+    {
+        cairo_set_source_rgb(cr, 0, 1, 0);
+        cairo_set_line_width(cr, 2);
+        cairo_rectangle(cr, min_x, min_y, max_x-min_x, max_y-min_y);
+        cairo_stroke(cr);
+    }
 
     return GDK_EVENT_PROPAGATE;
 }
@@ -135,10 +152,24 @@ int main(int argc, char *argv[])
     GtkBuilder *builder = gtk_builder_new_from_resource("/ui.glade");
     g_assert(builder);
 
-    GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
-    GtkWidget *drawing_area = GTK_WIDGET(gtk_builder_get_object(builder, "drawingarea"));
+#define get(widget) GTK_WIDGET(gtk_builder_get_object(builder, widget));
+    GtkWidget *window       = get("window");
+    GtkWidget *drawing_area = get("drawingarea");
+    show_touches_switch     = get("show_touches");
+    bounding_box_switch     = get("bounding_box");
+    rotate_switch           = get("rotate");
+    zoom_switch             = get("zoom");
+    drag_switch             = get("drag");
+
     g_assert(window);
     g_assert(drawing_area);
+    g_assert(show_touches_switch);
+    g_assert(bounding_box_switch);
+    g_assert(rotate_switch);
+    g_assert(zoom_switch);
+    g_assert(drag_switch);
+#undef get
+    
 
     g_signal_connect(drawing_area, "draw", G_CALLBACK(draw), NULL);
 
