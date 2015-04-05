@@ -112,7 +112,8 @@ gboolean draw(GtkWidget *widget,
 
     // touches and bounding box
     bool draw_touches = gtk_switch_get_state(GTK_SWITCH(show_touches_switch));
-    bool draw_bounding_box = gtk_switch_get_state(GTK_SWITCH(bounding_box_switch));
+    bool draw_bounding_box = gtk_switch_get_state(GTK_SWITCH(bounding_box_switch)) &&
+        g_hash_table_size(touches) > 1;
 
     if (draw_touches || draw_bounding_box)
     {
@@ -121,13 +122,14 @@ gboolean draw(GtkWidget *widget,
                max_x = -1, // bottom right
                max_y = -1;
         
+        const int circle_radius = 40;
         GList *touch_list = g_hash_table_get_values(touches);
         for (GList *elem = touch_list; elem != NULL; elem = elem->next)
         {
             Touch *t = elem->data;
             if (draw_touches)
             {
-                cairo_arc(cr, t->x, t->y, 25, 0, 2*M_PI);
+                cairo_arc(cr, t->x, t->y, circle_radius, 0, 2*M_PI);
                 cairo_fill(cr);
             }
  
@@ -145,7 +147,7 @@ gboolean draw(GtkWidget *widget,
         {
             cairo_set_source_rgb(cr, 0, 1, 0);
             cairo_set_line_width(cr, 2);
-            cairo_rectangle(cr, min_x, min_y, max_x-min_x, max_y-min_y);
+            cairo_rectangle(cr, min_x-circle_radius, min_y-circle_radius, max_x-min_x+circle_radius*2, max_y-min_y+circle_radius*2);
             cairo_stroke(cr);
         }
     }
