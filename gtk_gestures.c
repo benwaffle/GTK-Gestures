@@ -44,19 +44,18 @@ static void on_touch(GtkWidget      *w,
     gtk_widget_queue_draw(GTK_WIDGET(draw_area));
 }
 
-static void handle_gestures(GtkWidget *widget,
-                            GtkWidget *draw_area)
+static void handle_gestures(GtkWidget *drawingarea)
 {
     touches = g_hash_table_new_full(NULL, NULL, NULL, &free);
-    g_signal_connect(widget, "touch-event", G_CALLBACK(on_touch), draw_area);
+    g_signal_connect(drawingarea, "touch-event", G_CALLBACK(on_touch), drawingarea);
 
-    drag = gtk_gesture_drag_new(widget);
-    rotate = gtk_gesture_rotate_new(widget);
-    zoom = gtk_gesture_zoom_new(widget);
+    drag = gtk_gesture_drag_new(drawingarea);
+    rotate = gtk_gesture_rotate_new(drawingarea);
+    zoom = gtk_gesture_zoom_new(drawingarea);
 
-    g_signal_connect_swapped(drag, "drag-update", G_CALLBACK(gtk_widget_queue_draw), draw_area);
-    g_signal_connect_swapped(rotate, "angle-changed", G_CALLBACK(gtk_widget_queue_draw), draw_area);
-    g_signal_connect_swapped(zoom, "scale-changed", G_CALLBACK(gtk_widget_queue_draw), draw_area);
+    g_signal_connect_swapped(drag, "drag-update", G_CALLBACK(gtk_widget_queue_draw), drawingarea);
+    g_signal_connect_swapped(rotate, "angle-changed", G_CALLBACK(gtk_widget_queue_draw), drawingarea);
+    g_signal_connect_swapped(zoom, "scale-changed", G_CALLBACK(gtk_widget_queue_draw), drawingarea);
 }
 
 static gboolean draw(GtkWidget *widget,
@@ -80,7 +79,9 @@ static gboolean draw(GtkWidget *widget,
 
     gdouble scale = 1;
     if (gtk_gesture_is_recognized(zoom))
+    {
         scale = gtk_gesture_zoom_get_scale_delta(GTK_GESTURE_ZOOM(zoom));
+    }
     if (gtk_gesture_is_recognized(rotate))
     {
         cairo_matrix_t matrix;
@@ -131,16 +132,19 @@ int main(int argc, char *argv[])
 {
     gtk_init(&argc, &argv);
 
-    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "GTK gestures demo");
-    gtk_window_maximize(GTK_WINDOW(window));
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    GtkBuilder *builder = gtk_builder_new_from_resource("/ui.glade");
+    g_assert(builder);
 
-    GtkWidget *drawing_area = gtk_drawing_area_new();
+    GtkWidget *window = GTK_WIDGET(gtk_builder_get_object(builder, "window"));
+    GtkWidget *drawing_area = GTK_WIDGET(gtk_builder_get_object(builder, "drawingarea"));
+    g_assert(window);
+    g_assert(drawing_area);
+
     g_signal_connect(drawing_area, "draw", G_CALLBACK(draw), NULL);
-    gtk_container_add(GTK_CONTAINER(window), drawing_area);
 
-    handle_gestures(window, drawing_area);
+    handle_gestures(drawing_area);
+
+    gtk_window_maximize(GTK_WINDOW(window));
     gtk_widget_show_all(window);
 
     gtk_main();

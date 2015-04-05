@@ -8,4 +8,4 @@ ui.c:
 
 .PHONY: clean
 clean:
-	rm gtk_gestures *.o
+	rm gtk_gestures *.o ui.c
