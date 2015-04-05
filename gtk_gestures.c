@@ -64,17 +64,17 @@ static void handle_gestures(GtkWidget *drawingarea)
 }
 
 gboolean draw(GtkWidget *widget,
-                     cairo_t   *cr,
-                     gpointer   user_data)
+              cairo_t   *cr,
+              gpointer   user_data)
 {
     // drag gesture
     if (gtk_switch_get_state(GTK_SWITCH(drag_switch)) && gtk_gesture_is_recognized(drag))
     {
-        gdouble x, y;
+        double x, y;
         gtk_gesture_drag_get_start_point(GTK_GESTURE_DRAG(drag), &x, &y);
         cairo_move_to(cr, x, y);
 
-        gdouble dx, dy;
+        double dx, dy;
         gtk_gesture_drag_get_offset(GTK_GESTURE_DRAG(drag), &dx, &dy);
         cairo_line_to(cr, x + dx, y + dy);
 
