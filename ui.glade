@@ -243,6 +243,7 @@
             <property name="app_paintable">True</property>
             <property name="can_focus">False</property>
             <signal name="draw" handler="draw" after="yes" swapped="no"/>
+            <signal name="touch-event" handler="on_touch" swapped="no"/>
           </object>
           <packing>
             <property name="resize">True</property>

@@ -8,9 +8,9 @@ static GtkWidget *show_touches_switch,
 static GHashTable *touches = NULL;
 typedef struct { double x, y; } Touch;
 
-static void on_touch(GtkWidget      *w,
-                     GdkEventTouch  *ev,
-                     GtkDrawingArea *draw_area)
+void on_touch(GtkWidget      *w,
+              GdkEventTouch  *ev,
+              gpointer        userdata)
 {
     switch (ev->type)
     {
@@ -46,7 +46,7 @@ static void on_touch(GtkWidget      *w,
             break;
         }
     }
-    gtk_widget_queue_draw(GTK_WIDGET(draw_area));
+    gtk_widget_queue_draw(w); // drawing area
 }
 
 static void handle_gestures(GtkWidget *drawingarea)
@@ -57,7 +57,6 @@ static void handle_gestures(GtkWidget *drawingarea)
     rotate = gtk_gesture_rotate_new(drawingarea);
     zoom = gtk_gesture_zoom_new(drawingarea);
 
-    g_signal_connect(drawingarea,    "touch-event",   G_CALLBACK(on_touch),              drawingarea);
     g_signal_connect_swapped(drag,   "drag-update",   G_CALLBACK(gtk_widget_queue_draw), drawingarea);
     g_signal_connect_swapped(rotate, "angle-changed", G_CALLBACK(gtk_widget_queue_draw), drawingarea);
     g_signal_connect_swapped(zoom,   "scale-changed", G_CALLBACK(gtk_widget_queue_draw), drawingarea);
