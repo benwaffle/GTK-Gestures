@@ -82,7 +82,8 @@ gboolean draw(GtkWidget *widget,
         double x, y;
         gtk_gesture_get_bounding_box_center(rotate, &x, &y);
         cairo_matrix_t matrix;
-        cairo_matrix_init_translate(&matrix, x, y);
+        cairo_get_matrix(cr, &matrix);
+        cairo_matrix_translate(&matrix, x, y);
         cairo_matrix_rotate(&matrix, rotation);
         cairo_matrix_scale(&matrix, scale, scale);
 
@@ -109,7 +110,7 @@ gboolean draw(GtkWidget *widget,
                max_x = -1, // bottom right
                max_y = -1;
         
-        const int circle_radius = 40;
+        const int circle_radius = 25;
         GList *touch_list = g_hash_table_get_values(touches);
         for (GList *elem = touch_list; elem != NULL; elem = elem->next)
         {
@@ -132,14 +133,10 @@ gboolean draw(GtkWidget *widget,
 
         if (draw_bounding_box)
         {
-            cairo_pattern_t *gradient = cairo_pattern_create_linear(min_x-circle_radius, 0, max_x+circle_radius*2, 0);
-            cairo_pattern_add_color_stop_rgb(gradient, 0, 0.5, 1, 0); 
-            cairo_pattern_add_color_stop_rgb(gradient, 1, 0, 1, 1); 
-            cairo_set_source(cr, gradient);
+            cairo_set_source_rgb(cr, 0, 1, 0);
             cairo_rectangle(cr, min_x-circle_radius, min_y-circle_radius, max_x-min_x+circle_radius*2, max_y-min_y+circle_radius*2);
-            cairo_set_line_width(cr, 10);
+            cairo_set_line_width(cr, 4);
             cairo_stroke(cr);
-            cairo_pattern_destroy(gradient);
         }
     }
 
