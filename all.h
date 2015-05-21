@@ -18,8 +18,3 @@
 #include <glib.h>
 #include <cairo.h>
 
-__attribute__((unused)) static void _auto_free(void **p) {
-    free(*p);
-}
-
-#define autofree __attribute__(( cleanup(_auto_free) ))

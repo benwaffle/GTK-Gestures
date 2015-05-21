@@ -238,12 +238,10 @@
           </packing>
         </child>
         <child>
-          <object class="GtkDrawingArea" id="drawingarea">
+          <object class="GtkDrawingArea" id="drawing_area">
             <property name="visible">True</property>
             <property name="app_paintable">True</property>
             <property name="can_focus">False</property>
-            <signal name="draw" handler="draw" after="yes" swapped="no"/>
-            <signal name="touch-event" handler="on_touch" swapped="no"/>
           </object>
           <packing>
             <property name="resize">True</property>
