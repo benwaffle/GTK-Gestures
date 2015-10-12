@@ -71,7 +71,7 @@ gboolean draw(GtkWidget *widget,
                      gtk_gesture_is_recognized(data->rotate);
 
   double scale = draw_zoom ? gtk_gesture_zoom_get_scale_delta(GTK_GESTURE_ZOOM(data->zoom)) : 1;
-  double rotation = draw_rotate ? gtk_gesture_rotate_get_angle_delta(GTK_GESTURE_ROTATE(data->rotate)) * 2 : 1;
+  double rotation = draw_rotate ? gtk_gesture_rotate_get_angle_delta(GTK_GESTURE_ROTATE(data->rotate)) : 1;
 
   if (draw_zoom || draw_rotate) {
     double x, y;
