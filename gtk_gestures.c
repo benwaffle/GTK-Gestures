@@ -16,6 +16,7 @@ void on_touch(GtkWidget     *w,
 {
   switch (ev->type) {
     case GDK_TOUCH_BEGIN: {
+      g_debug ("touch begin");
       if (!g_hash_table_contains(data->touches, ev->sequence)) {
         Touch *t = g_new(Touch, 1);
         t->x = ev->x;
@@ -26,6 +27,7 @@ void on_touch(GtkWidget     *w,
     }
 
     case GDK_TOUCH_UPDATE: {
+      g_debug ("touch update");
       Touch *t = g_hash_table_lookup(data->touches, ev->sequence);
       t->x = ev->x;
       t->y = ev->y;
@@ -33,12 +35,13 @@ void on_touch(GtkWidget     *w,
     }
 
     case GDK_TOUCH_END: {
+      g_debug ("touch end");
       g_hash_table_remove(data->touches, ev->sequence);
       break;
     }
 
     default: {
-      puts("received a touch event (not begin, update, or end)");
+      g_debug ("received a touch event (not begin, update, or end)");
       break;
     }
   }
